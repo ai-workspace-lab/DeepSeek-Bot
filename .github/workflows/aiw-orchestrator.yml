@@ -1,0 +1,66 @@
+name: aiw-orchestrator
+
+on:
+  push:
+    branches: [main]
+    paths: ['aiw-orchestrator/**', '.github/workflows/aiw-orchestrator.yml']
+  pull_request:
+    paths: ['aiw-orchestrator/**', '.github/workflows/aiw-orchestrator.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aiw-orchestrator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: unit · Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    defaults:
+      run:
+        working-directory: aiw-orchestrator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+
+  dsh-integration:
+    name: real DSH ${{ matrix.dsh }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dsh: [0.2.1-alpha.1]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - name: Install DSH ${{ matrix.dsh }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/dsh" && cd "$RUNNER_TEMP/dsh"
+          echo '{"name":"dsh-ci","private":true}' > package.json
+          npm install --no-fund --no-audit "@deepseek-ai/dsh@${{ matrix.dsh }}"
+      - name: Integration run
+        working-directory: aiw-orchestrator
+        env:
+          DSH_BIN: ${{ runner.temp }}/dsh/node_modules/.bin/dsh
+          DSH_SUBAGENT_ACP_VERSION: ${{ matrix.dsh }}
+        run: node dev/integration.mjs "$RUNNER_TEMP/aiw-integration-receipt.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aiw-integration-receipt
+          path: ${{ runner.temp }}/aiw-integration-receipt.json
+          if-no-files-found: warn

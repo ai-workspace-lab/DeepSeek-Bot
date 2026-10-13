@@ -1,0 +1,37 @@
+# Example mount for the AI Workspace profile. Copy it next to the profile, fill in the
+# placeholders, and pass it with `dsh --profile web --patch <file>`. Nothing here is a
+# secret: tokens are named by environment variable and read at start.
+#
+# One subagent provider instance per executor and model. Each instance pins its model in
+# the executor's own configuration, and its providerName must equal the policy's
+# subagent_provider_template with that model's observed gateway id substituted.
+- insert:
+    - id: subagent-acp-opencode
+      name: '@deepseek-ai/dsh-subagent-acp'
+      config:
+        providerName: 'opencode:REPLACE_WITH_GATEWAY_MODEL_ID'
+        command: opencode
+        args: ['acp']
+        # The OpenCode configuration this instance uses must select the same model; check the
+        # variable name against the pinned OpenCode version before relying on it.
+        env:
+          OPENCODE_CONFIG: /ABSOLUTE/PATH/opencode.REPLACE_WITH_GATEWAY_MODEL_ID.json
+        permission: reject
+    - id: subagent-codex
+      name: '@deepseek-ai/dsh-subagent-codex'
+      config:
+        providerName: 'codex:REPLACE_WITH_GATEWAY_MODEL_ID'
+        model: REPLACE_WITH_GATEWAY_MODEL_ID
+    - id: aiw-orchestrator
+      name: aiw-orchestrator
+      config:
+        policyPath: /ABSOLUTE/PATH/role-router-policy.json
+        workerId: REPLACE_WITH_STABLE_HOST_ID
+        accounts:
+          baseUrlEnv: AIW_ACCOUNTS_BASE_URL
+          tokenEnv: AIW_TASK_SCHEDULER_TOKEN
+          accountId: REPLACE_WITH_ACCOUNT_UUID
+        memory:
+          url: http://127.0.0.1:8181/mcp
+          contextTool: mem_context
+          recordTool: mem_remember
