@@ -1,0 +1,679 @@
+{
+  "version": "0.5-draft",
+  "enabled": false,
+  "notes": "Editable draft for the DSH aiw-orchestrator. enabled=false means this policy is not active. Each executor is a family of DSH subagent provider instances, one per model: the orchestrator resolves subagent_provider_template with the observed gateway model id and dispatches only to a provider of that exact name mounted in the profile, whose own configuration must pin the same model. Every gateway_model_id stays null until observed in the live /v1/models snapshot for the configured token.",
+  "budget": {
+    "mode": "disabled",
+    "task_cap": null,
+    "daily_cap": null,
+    "currency": null
+  },
+  "limits": {
+    "context_reserve_tokens": 32000,
+    "catalog_max_age_seconds": 900,
+    "max_model_calls_per_task": 8,
+    "max_tool_calls_per_task": 8,
+    "max_model_switches_per_task": 1,
+    "max_role_changes_per_task": 1,
+    "max_transport_retries_per_call": 1,
+    "effort_rules": {
+      "large_context_tokens": 32000,
+      "large_context_attachments": 3,
+      "short_follow_up_chars": 200
+    }
+  },
+  "connections": {
+    "ai-internal": {
+      "base_url_env": "XWORKMATE_AI_INTERNAL_BASE_URL",
+      "token_env": "XWORKMATE_AI_INTERNAL_TOKEN",
+      "allowed_data_classes": [
+        "unclassified"
+      ]
+    }
+  },
+  "executors": {
+    "opencode": {
+      "connection": "ai-internal",
+      "subagent_provider_template": "opencode:{model_id}",
+      "pinned_version": "@deepseek-ai/dsh-subagent-acp@0.2.1-alpha.1 + opencode (pin when verified)",
+      "entry": "dsh-subagent-acp: opencode acp",
+      "capabilities": {
+        "workspace_edit": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        },
+        "test_runner": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        }
+      }
+    },
+    "codex": {
+      "connection": "ai-internal",
+      "subagent_provider_template": "codex:{model_id}",
+      "pinned_version": "@deepseek-ai/dsh-subagent-codex@0.2.1-alpha.1",
+      "entry": "dsh-subagent-codex: Codex app-server",
+      "capabilities": {
+        "workspace_edit": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        },
+        "test_runner": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        }
+      }
+    },
+    "claude-code": {
+      "connection": "ai-internal",
+      "subagent_provider_template": "claude-code:{model_id}",
+      "pinned_version": "@deepseek-ai/dsh-subagent-claude-code@0.2.1-alpha.1",
+      "entry": "dsh-subagent-claude-code: Claude Agent SDK",
+      "capabilities": {
+        "workspace_edit": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        },
+        "test_runner": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        }
+      }
+    },
+    "grok": {
+      "connection": "ai-internal",
+      "subagent_provider_template": "grok:{model_id}",
+      "pinned_version": "@deepseek-ai/dsh-subagent-acp@0.2.1-alpha.1 + Grok Build CLI (ACP support unverified)",
+      "entry": "dsh-subagent-acp: grok agent stdio",
+      "capabilities": {
+        "workspace_edit": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        },
+        "test_runner": {
+          "value": null,
+          "state": "unknown",
+          "source": "",
+          "checked_at": "0001-01-01T00:00:00Z",
+          "valid_until": "0001-01-01T00:00:00Z"
+        }
+      }
+    }
+  },
+  "models": {
+    "claude-opus-5-5": {
+      "display_name": "Claude Opus 5.5",
+      "official_id": "claude-opus-5-5",
+      "gitops_declared_id": null,
+      "mapping_status": "pending_mapping",
+      "note": "Keep the user's choice; never substitute Sonnet or claude-opus-5.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "gpt-6.1-sol": {
+      "display_name": "GPT 6.1 Sol",
+      "official_id": null,
+      "gitops_declared_id": "gpt-6.1-sol",
+      "mapping_status": "pending_mapping",
+      "note": "Declared match in the GitOps list only; needs live catalog and capability checks.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "gpt-6-luna": {
+      "display_name": "GPT 6 Luna",
+      "official_id": null,
+      "gitops_declared_id": "gpt-6-luna",
+      "mapping_status": "pending_mapping",
+      "note": "Declared match in the GitOps list only.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "gpt-6-astra": {
+      "display_name": "GPT 6 Astra",
+      "official_id": null,
+      "gitops_declared_id": "gpt-6-astra",
+      "mapping_status": "pending_mapping",
+      "note": "Declared match in the GitOps list only.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "gemini-3.8-flash": {
+      "display_name": "Gemini 3.8 Flash",
+      "official_id": "gemini-3.8-flash",
+      "gitops_declared_id": null,
+      "mapping_status": "pending_mapping",
+      "note": "Never fall back to Gemini 3.5 or 3.1 under this name.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "Grok4.7": {
+      "display_name": "Grok 4.7",
+      "official_id": "grok-4.7",
+      "gitops_declared_id": null,
+      "mapping_status": "pending_mapping",
+      "note": "Search connectivity is checked separately.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "Fable5.1": {
+      "display_name": "Fable 5.1",
+      "official_id": "claude-fable-5-1",
+      "gitops_declared_id": null,
+      "mapping_status": "pending_mapping",
+      "note": "Access and role fit are not checked yet.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "Mythos5.1": {
+      "display_name": "Mythos 5.1",
+      "official_id": "claude-mythos-5-1",
+      "gitops_declared_id": null,
+      "mapping_status": "pending_mapping",
+      "note": "Requires verified organization access; missing access returns access_unverified.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "Qwen/Qwen3.5-4B": {
+      "display_name": "Qwen3.5-4B",
+      "candidate_only": true,
+      "license": "Apache-2.0",
+      "note": "Worker / light Chat candidate.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "Qwen/Qwen3.8-27B": {
+      "display_name": "Qwen3.8-27B",
+      "candidate_only": true,
+      "license": "Apache-2.0",
+      "note": "Hosted version not claimed.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "Qwen/Qwen3-Coder-Next": {
+      "display_name": "Qwen3-Coder-Next",
+      "candidate_only": true,
+      "license": "Apache-2.0 (metadata only; full text not reviewed)",
+      "note": "Text-only, non-thinking.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash": {
+      "display_name": "DeepSeek-V4.1-Flash",
+      "candidate_only": true,
+      "license": "MIT",
+      "note": "Needs matching encoding, adapter and output parser.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "moonshotai/Kimi-K3": {
+      "display_name": "Kimi K3",
+      "candidate_only": true,
+      "license": "Kimi K3 License (custom)",
+      "note": "Review commercial/MaaS and attribution terms first.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "zai-org/GLM-5.3": {
+      "display_name": "GLM-5.3",
+      "candidate_only": true,
+      "license": "GLM-5.3 License (custom)",
+      "note": "Do not reuse older MIT conclusions.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    "MiniMaxAI/MiniMax-M3": {
+      "display_name": "MiniMax-M3",
+      "candidate_only": true,
+      "license": "MINIMAX COMMUNITY LICENSE (custom)",
+      "note": "Review attribution, revenue threshold and prohibited-use terms.",
+      "bindings": {
+        "ai-internal": {
+          "gateway_model_id": null,
+          "capabilities": {
+            "tool_calling": {
+              "value": null,
+              "state": "unknown",
+              "source": "",
+              "checked_at": "0001-01-01T00:00:00Z",
+              "valid_until": "0001-01-01T00:00:00Z"
+            }
+          },
+          "context_window": {
+            "value": null,
+            "state": "unknown",
+            "source": "",
+            "checked_at": "0001-01-01T00:00:00Z",
+            "valid_until": "0001-01-01T00:00:00Z"
+          }
+        }
+      }
+    }
+  },
+  "roles": {
+    "chat": {
+      "enabled": false,
+      "preferences": [
+        "claude-opus-5-5",
+        "gpt-6.1-sol"
+      ],
+      "executors": [],
+      "required_model_capabilities": [],
+      "required_executor_capabilities": [],
+      "requires_workspace": false,
+      "requires_specialty": false,
+      "tools": []
+    },
+    "worker": {
+      "enabled": false,
+      "preferences": [
+        "gpt-6-luna",
+        "gemini-3.8-flash"
+      ],
+      "executors": [],
+      "required_model_capabilities": [],
+      "required_executor_capabilities": [],
+      "requires_workspace": false,
+      "requires_specialty": false,
+      "tools": []
+    },
+    "engineer": {
+      "enabled": true,
+      "preferences": [
+        "gpt-6.1-sol",
+        "claude-opus-5-5"
+      ],
+      "executors": [
+        "opencode",
+        "codex",
+        "claude-code",
+        "grok"
+      ],
+      "required_model_capabilities": [
+        "tool_calling"
+      ],
+      "required_executor_capabilities": [
+        "workspace_edit",
+        "test_runner"
+      ],
+      "requires_workspace": true,
+      "requires_specialty": false,
+      "tools": [
+        "read",
+        "edit",
+        "bash",
+        "test"
+      ],
+      "product_modes": [
+        "code"
+      ],
+      "effort": {
+        "start": "high",
+        "min": "medium",
+        "max": "max"
+      }
+    },
+    "architect": {
+      "enabled": false,
+      "preferences": [
+        "gpt-6-astra",
+        "Grok4.7",
+        "Fable5.1"
+      ],
+      "executors": [
+        "claude-code",
+        "codex"
+      ],
+      "required_model_capabilities": [],
+      "required_executor_capabilities": [],
+      "requires_workspace": true,
+      "requires_specialty": false,
+      "tools": [],
+      "product_modes": [
+        "work",
+        "code"
+      ],
+      "effort": {
+        "start": "max",
+        "min": "high",
+        "max": "max"
+      }
+    },
+    "researcher": {
+      "enabled": false,
+      "preferences": [
+        "gpt-6-astra",
+        "Fable5.1",
+        "Grok4.7"
+      ],
+      "executors": [
+        "claude-code",
+        "codex"
+      ],
+      "required_model_capabilities": [],
+      "required_executor_capabilities": [],
+      "requires_workspace": true,
+      "requires_specialty": false,
+      "tools": [],
+      "product_modes": [
+        "work",
+        "code"
+      ],
+      "effort": {
+        "start": "high",
+        "min": "medium",
+        "max": "max"
+      }
+    },
+    "specialist": {
+      "enabled": false,
+      "preferences": [
+        "Mythos5.1"
+      ],
+      "executors": [
+        "claude-code",
+        "codex"
+      ],
+      "required_model_capabilities": [],
+      "required_executor_capabilities": [],
+      "requires_workspace": true,
+      "requires_specialty": true,
+      "tools": [],
+      "product_modes": [
+        "work",
+        "code"
+      ],
+      "effort": {
+        "start": "high",
+        "min": "high",
+        "max": "max"
+      }
+    }
+  }
+}
