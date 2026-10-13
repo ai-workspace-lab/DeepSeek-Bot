@@ -88,6 +88,8 @@ try {
       config:
         policyPath: ${JSON.stringify(policyPath)}
         workerId: dsh-integration
+        workspaces:
+          it-repo: ${JSON.stringify(workspace)}
         leaseTtlSeconds: 30
         renewEveryMs: 300
         pollIntervalMs: 200
@@ -115,7 +117,7 @@ try {
   const prompts = () => (existsSync(join(records, 'acp-prompts.jsonl')) ? readFileSync(join(records, 'acp-prompts.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line)) : [])
 
   // 1. Completed run through the real subagent seam, with memory fenced into the prompt.
-  const done = services.enqueue({ text: 'Make the failing test pass.', routing: { role: 'engineer', workingDirectory: workspace } })
+  const done = services.enqueue({ text: 'Make the failing test pass.', routing: { role: 'engineer', workspace: 'it-repo' } })
   const doneEnd = await until('run 1 to settle', () => terminal(done.id))
   assert.equal(doneEnd.type, 'run.completed', JSON.stringify(eventsOf(done.id), null, 2))
   const answer = eventsOf(done.id).find(event => event.type === 'assistant.message.created')
@@ -129,7 +131,7 @@ try {
   receipt.scenarios.push({ name: 'completed', events: eventsOf(done.id).map(event => [event.seq, event.type, event.payload.phase ?? null]) })
 
   // 2. Cancel requested while the executor holds the prompt.
-  const slow = services.enqueue({ text: '[slow] long task', routing: { role: 'engineer', workingDirectory: workspace } })
+  const slow = services.enqueue({ text: '[slow] long task', routing: { role: 'engineer', workspace: 'it-repo' } })
   await until('run 2 to start', () => eventsOf(slow.id).find(event => event.payload.phase === 'started'))
   await until('the executor to receive run 2', () => prompts().some(entry => entry.kind === 'prompt' && entry.text.includes('[slow]')))
   services.requestCancel(slow.id)
@@ -140,7 +142,7 @@ try {
 
   // 3. A role the policy has not enabled is rejected before any dispatch.
   const before = prompts().filter(entry => entry.kind === 'prompt').length
-  const rejected = services.enqueue({ text: 'Survey the field.', routing: { role: 'researcher', workingDirectory: workspace } })
+  const rejected = services.enqueue({ text: 'Survey the field.', routing: { role: 'researcher', workspace: 'it-repo' } })
   const rejectedEnd = await until('run 3 to settle', () => terminal(rejected.id))
   assert.equal(rejectedEnd.type, 'run.failed')
   assert.equal(rejectedEnd.payload.roleSelection.code, 'role_not_enabled')

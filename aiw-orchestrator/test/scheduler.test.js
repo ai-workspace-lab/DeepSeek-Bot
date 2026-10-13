@@ -6,7 +6,8 @@ import { Scheduler, selectionRequest } from '../src/scheduler.js'
 import { NOW, engineerPolicy, liveCatalog } from './fixtures.js'
 
 const run = (overrides = {}) => ({ id: 'run-1', sessionId: 'sess-1', namespaceId: 'ns-1', fence: 2, leaseToken: 'lease', leaseExpiresAt: new Date(NOW + 60_000).toISOString(), ...overrides })
-const message = (routing = {}) => ({ text: 'make the failing test pass', routing: { role: 'engineer', workingDirectory: '/srv/workspace/demo', ...routing } })
+const WORKSPACES = { demo: '/srv/workspace/demo' }
+const message = (routing = {}) => ({ text: 'make the failing test pass', routing: { role: 'engineer', workspace: 'demo', ...routing } })
 
 function fakeAccounts({ renew } = {}) {
   const events = []
@@ -40,13 +41,17 @@ function fakeDispatcher(behaviour) {
 const catalogs = { snapshot: async () => liveCatalog('gpt-6.1-sol') }
 
 function scheduler({ accounts, dispatcher, memory, renewEveryMs = 5 }) {
-  return new Scheduler({ accounts, policy: engineerPolicy(), catalogs, dispatcher, memory, now: () => NOW, renewEveryMs, leaseTtlSeconds: 60 })
+  return new Scheduler({ accounts, policy: engineerPolicy(), catalogs, dispatcher, memory, workspaces: WORKSPACES, now: () => NOW, renewEveryMs, leaseTtlSeconds: 60 })
 }
 
 const types = accounts => accounts.events.map(event => event.type)
 
-test('selection request is derived from the claimed message only', () => {
-  const request = selectionRequest(message({ roleMode: 'manual', roleModel: 'gpt-6.1-sol', attachments: 2, followUp: true }), ['p'], NOW)
+test('selection request is derived from the claimed message and this host\'s workspaces only', () => {
+  const request = selectionRequest(message({ roleMode: 'manual', roleModel: 'gpt-6.1-sol', attachments: 2, followUp: true }), ['p'], NOW, WORKSPACES)
+  assert.equal(request.workingDirectory, '/srv/workspace/demo')
+  assert.equal(selectionRequest(message({ workspace: 'unknown' }), [], NOW, WORKSPACES).workingDirectory, '')
+  assert.equal(selectionRequest(message({ workspace: 'toString' }), [], NOW, WORKSPACES).workingDirectory, '')
+  assert.equal(selectionRequest(message({ workspace: undefined, workingDirectory: '/etc' }), [], NOW, WORKSPACES).workingDirectory, '')
   assert.equal(request.role, 'engineer')
   assert.equal(request.manualModel, 'gpt-6.1-sol')
   assert.equal(request.promptBytes, Buffer.byteLength('make the failing test pass'))
@@ -60,7 +65,7 @@ test('a completed run appends selected, started, the answer and completed, with 
   const dispatcher = fakeDispatcher(async () => ({ stopReason: 'completed', text: 'All tests pass.', childId: 'child-1', parentSessionId: 'dsh-1' }))
   await scheduler({ accounts, dispatcher }).process({ run: run(), message: message() })
   assert.deepEqual(types(accounts), ['run.progressed', 'run.progressed', 'assistant.message.created', 'run.completed'])
-  assert.deepEqual(accounts.events.map(event => event.clientRequestId), ['run-1/2/1', 'run-1/2/2', 'run-1/2/3', 'run-1/2/4'])
+  assert.deepEqual(accounts.events.map(event => event.clientRequestId), ['run-1:2:1', 'run-1:2:2', 'run-1:2:3', 'run-1:2:4'])
   assert.equal(accounts.events[0].payload.phase, 'selected')
   assert.equal(accounts.events[0].payload.roleSelection.subagentProvider, 'opencode:gpt-6.1-sol')
   assert.equal(accounts.events[2].payload.text, 'All tests pass.')
@@ -74,7 +79,7 @@ test('a completed run appends selected, started, the answer and completed, with 
 test('a rejected selection fails the run without dispatching', async () => {
   const accounts = fakeAccounts()
   const dispatcher = fakeDispatcher(async () => assert.fail('must not dispatch'))
-  await scheduler({ accounts, dispatcher }).process({ run: run(), message: message({ workingDirectory: '' }) })
+  await scheduler({ accounts, dispatcher }).process({ run: run(), message: message({ workspace: 'not-configured' }) })
   assert.deepEqual(types(accounts), ['run.failed'])
   assert.equal(accounts.events[0].payload.phase, 'rejected')
   assert.equal(accounts.events[0].payload.roleSelection.code, 'workspace_unauthorized')
@@ -148,7 +153,7 @@ test('memory: context is fenced into the prompt, the answer is recorded as a can
   const memoryEvent = accounts.events.find(event => event.payload.phase === 'memory')
   assert.equal(memoryEvent.payload.chars, 'The repo uses pnpm.'.length)
   assert.ok(!JSON.stringify(accounts.events).includes('The repo uses pnpm.'), 'memory content stays out of task events')
-  assert.equal(recorded[0].eventId, 'run-1/2')
+  assert.equal(recorded[0].eventId, 'run-1:2')
   assert.equal(recorded[0].source.taskRunId, 'run-1')
   assert.equal(accounts.events.at(-1).payload.memoryRecordedBy, 'mem_remember')
 
@@ -176,7 +181,7 @@ test('the loop claims, processes and stops', async () => {
   let claims = 0
   accounts.claim = async () => (++claims === 1 ? { run: run(), message: message() } : undefined)
   const dispatcher = fakeDispatcher(async () => ({ stopReason: 'completed', text: 'ok' }))
-  const loop = new Scheduler({ accounts, policy: engineerPolicy(), catalogs, dispatcher, now: () => NOW, pollIntervalMs: 5, renewEveryMs: 1000 })
+  const loop = new Scheduler({ accounts, policy: engineerPolicy(), catalogs, dispatcher, workspaces: WORKSPACES, now: () => NOW, pollIntervalMs: 5, renewEveryMs: 1000 })
   loop.start()
   while (!types(accounts).includes('run.completed')) await new Promise(resolve => setTimeout(resolve, 5))
   await loop.stop()

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { apply, buildScheduler, inject, name } from '../index.js'
+import { apply, buildScheduler, inject, name, parseWorkspaces } from '../index.js'
 import { engineerPolicy } from './fixtures.js'
 
 const ctx = { subagents: { list: () => [] }, sessionController: {}, workspaceRegistry: {} }
@@ -25,6 +25,16 @@ test('buildScheduler reads secrets from the named environment variables only', (
   assert.throws(() => buildScheduler(ctx, { ...config, accounts: { ...config.accounts, accountId: undefined } }, { policy: engineerPolicy(), env: { AIW_SCHED_TOKEN: 'tok' }, log: () => {} }), /accountId/)
   const noMemory = buildScheduler(ctx, { ...config, memory: undefined }, { policy: engineerPolicy(), env: { AIW_SCHED_TOKEN: 'tok' }, log: () => {} })
   assert.equal(noMemory.memory, undefined)
+})
+
+test('workspaces map plain keys to absolute paths only', () => {
+  assert.deepEqual(parseWorkspaces({ demo: '/srv/demo', 'repo.v2': '/srv/v2' }), { demo: '/srv/demo', 'repo.v2': '/srv/v2' })
+  assert.deepEqual(parseWorkspaces(undefined), {})
+  for (const bad of [{ demo: 'relative' }, { 'a/b': '/srv' }, { '..': '/srv' }, { demo: 7 }, ['/srv']]) {
+    assert.throws(() => parseWorkspaces(bad), /aiw-orchestrator/, JSON.stringify(bad))
+  }
+  const scheduler = buildScheduler(ctx, { ...config, workspaces: { demo: '/srv/demo' } }, { policy: engineerPolicy(), env: { AIW_SCHED_TOKEN: 'tok' }, log: () => {} })
+  assert.deepEqual(scheduler.workspaces, { demo: '/srv/demo' })
 })
 
 test('a bad policy path stops the plugin loudly without throwing into DSH', async () => {

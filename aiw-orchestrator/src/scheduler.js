@@ -19,7 +19,14 @@ const wait = (ms, signal) => new Promise((resolve) => {
 
 const trim = value => (typeof value === 'string' ? value.trim() : '')
 
-export function selectionRequest(message, availableProviders, now) {
+// The run names a workspace by key; only this host's configuration turns a key into a
+// directory, so a message can never point an executor at a path of its choosing.
+export function workspaceDirectory(workspaces, key) {
+  const name = trim(key)
+  return name && Object.hasOwn(workspaces ?? {}, name) ? workspaces[name] : ''
+}
+
+export function selectionRequest(message, availableProviders, now, workspaces) {
   const routing = message.routing ?? {}
   const text = message.text
   return {
@@ -29,7 +36,7 @@ export function selectionRequest(message, availableProviders, now) {
     productMode: trim(routing.productMode),
     specialty: trim(routing.specialty),
     dataClass: trim(routing.dataClass),
-    workingDirectory: trim(routing.workingDirectory),
+    workingDirectory: workspaceDirectory(workspaces, routing.workspace),
     promptBytes: Buffer.byteLength(text, 'utf8'),
     promptChars: [...text].length,
     attachments: Number.isInteger(routing.attachments) ? routing.attachments : 0,
@@ -41,8 +48,8 @@ export function selectionRequest(message, availableProviders, now) {
 }
 
 export class Scheduler {
-  constructor({ accounts, policy, catalogs, dispatcher, memory, log = () => {}, now = Date.now, leaseTtlSeconds = 60, renewEveryMs = 20_000, pollIntervalMs = 2_000 }) {
-    Object.assign(this, { accounts, policy, catalogs, dispatcher, memory, log, now, leaseTtlSeconds, renewEveryMs, pollIntervalMs })
+  constructor({ accounts, policy, catalogs, dispatcher, memory, workspaces = {}, log = () => {}, now = Date.now, leaseTtlSeconds = 60, renewEveryMs = 20_000, pollIntervalMs = 2_000 }) {
+    Object.assign(this, { accounts, policy, catalogs, dispatcher, memory, workspaces, log, now, leaseTtlSeconds, renewEveryMs, pollIntervalMs })
     this.stopping = undefined
     this.loop = undefined
   }
@@ -80,7 +87,7 @@ export class Scheduler {
     const append = async (type, payload) => {
       if (lease.lost) return
       try {
-        await this.accounts.appendEvent(run, { type, payload, clientRequestId: `${run.id}/${run.fence}/${++step}` })
+        await this.accounts.appendEvent(run, { type, payload, clientRequestId: `${run.id}:${run.fence}:${++step}` })
       } catch (error) {
         if (error instanceof LeaseLostError) {
           lease.lost = true
@@ -104,7 +111,7 @@ export class Scheduler {
   async execute({ run, message, lease, append, stopSignal }) {
     const now = this.now()
     const catalogs = await this.catalogs.snapshot(this.policy, now)
-    const decision = select(this.policy, catalogs, selectionRequest(message, this.dispatcher.providers(), now))
+    const decision = select(this.policy, catalogs, selectionRequest(message, this.dispatcher.providers(), now, this.workspaces))
     const roleSelection = decisionSummary(decision)
     if (!decision.selected) {
       await append('run.failed', { phase: PHASE.rejected, code: 'ROLE_SELECTION_REJECTED', roleSelection })
@@ -137,7 +144,7 @@ export class Scheduler {
     let outcome
     try {
       outcome = await this.dispatcher.run({
-        workingDirectory: trim(routing.workingDirectory),
+        workingDirectory: workspaceDirectory(this.workspaces, routing.workspace),
         provider: decision.subagentProvider,
         prompt,
         label: `${decision.role} · ${decision.modelKey}`,
@@ -177,7 +184,7 @@ export class Scheduler {
       try {
         memoryRecord = await this.memory.record({
           ...scope,
-          eventId: `${run.id}/${run.fence}`,
+          eventId: `${run.id}:${run.fence}`,
           source: { kind: 'task-run', taskRunId: run.id, sessionId: run.sessionId, executor: decision.executor, modelId: decision.modelId },
           text: outcome.text.slice(0, RECORD_TEXT_MAX),
         })

@@ -4,6 +4,8 @@
 import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
 
+const WORKER_EVENTS = new Set(['run.progressed', 'assistant.message.created', 'run.completed', 'run.failed', 'run.cancelled'])
+
 const readJson = req => new Promise((resolve, reject) => {
   let body = ''
   req.on('data', (chunk) => { body += chunk })
@@ -76,6 +78,8 @@ export async function startFakeServices({ schedulerToken, accountId, modelIds, m
         run.leaseExpiresAt = new Date(Date.now() + body.leaseTtlSeconds * 1000).toISOString()
         return send(res, 200, { leaseExpiresAt: run.leaseExpiresAt, cancelRequested: run.cancelRequested })
       }
+      // Mirror the Accounts checks a worker must satisfy, so the run catches a drifting client.
+      if (!/^[A-Za-z0-9._:-]{1,128}$/.test(body.clientRequestId ?? '') || !WORKER_EVENTS.has(body.type)) return send(res, 400, { error: 'invalid event' })
       const duplicate = events.find(event => event.clientRequestId === body.clientRequestId)
       if (duplicate) return send(res, 200, { event: duplicate, lastEventSeq: events.length })
       const event = { seq: events.length + 1, runId: run.id, type: body.type, payload: body.payload, clientRequestId: body.clientRequestId }

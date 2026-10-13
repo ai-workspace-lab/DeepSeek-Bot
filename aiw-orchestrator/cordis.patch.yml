@@ -27,6 +27,9 @@
       config:
         policyPath: /ABSOLUTE/PATH/role-router-policy.json
         workerId: REPLACE_WITH_STABLE_HOST_ID
+        # The only directories executors may run in, by the key a message names.
+        workspaces:
+          REPLACE_WITH_WORKSPACE_KEY: /ABSOLUTE/PATH/TO/AUTHORIZED/CHECKOUT
         accounts:
           baseUrlEnv: AIW_ACCOUNTS_BASE_URL
           tokenEnv: AIW_TASK_SCHEDULER_TOKEN
