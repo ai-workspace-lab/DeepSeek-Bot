@@ -1,6 +1,7 @@
 // AI Workspace orchestrator: a DSH host plugin that takes task runs from Accounts, selects
 // role, executor and model under the reviewed role policy, and runs each task on one DSH
 // subagent provider (OpenCode, Codex, Claude Code, Grok). It keeps no durable state.
+import { isAbsolute } from 'node:path'
 import { AccountsClient } from './src/accounts.js'
 import { CatalogCache } from './src/catalog.js'
 import { SubagentDispatcher } from './src/dispatch.js'
@@ -23,7 +24,20 @@ const secretFrom = (env, field, envName) => {
   return value
 }
 
+// Workspace keys are plain identifiers mapped to absolute directories this host authorizes.
+export function parseWorkspaces(workspaces = {}) {
+  if (typeof workspaces !== 'object' || workspaces === null || Array.isArray(workspaces)) throw new Error('aiw-orchestrator: config.workspaces must map keys to absolute paths')
+  const result = {}
+  for (const [key, path] of Object.entries(workspaces)) {
+    if (!/^[A-Za-z0-9._:-]{1,128}$/.test(key) || key === '.' || key === '..') throw new Error(`aiw-orchestrator: workspace key ${JSON.stringify(key)} is not a plain identifier`)
+    if (typeof path !== 'string' || !isAbsolute(path)) throw new Error(`aiw-orchestrator: workspace ${key} must be an absolute path`)
+    result[key] = path
+  }
+  return result
+}
+
 export function buildScheduler(ctx, config, { policy, env = process.env, fetchImpl = fetch, log }) {
+  const workspaces = parseWorkspaces(config.workspaces)
   const accountsConfig = config.accounts ?? {}
   const accounts = new AccountsClient({
     baseUrl: accountsConfig.baseUrlEnv ? secretFrom(env, 'accounts.baseUrlEnv', accountsConfig.baseUrlEnv) : required(accountsConfig.baseUrl, 'accounts.baseUrl'),
@@ -47,6 +61,7 @@ export function buildScheduler(ctx, config, { policy, env = process.env, fetchIm
     catalogs: new CatalogCache({ env, fetchImpl, log }),
     dispatcher: new SubagentDispatcher(ctx),
     memory,
+    workspaces,
     log,
     leaseTtlSeconds: config.leaseTtlSeconds ?? 60,
     renewEveryMs: config.renewEveryMs ?? 20_000,

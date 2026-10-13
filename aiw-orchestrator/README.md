@@ -66,9 +66,12 @@ only for the accounts Accounts allows it to serve; it is not the general interna
 | `POST /runs/{id}/renew` | `accountId, workerId, fence, leaseToken, leaseTtlSeconds` | `200 { leaseExpiresAt, cancelRequested }`, `409` once the lease is lost |
 | `POST /runs/{id}/events` | `accountId, workerId, fence, leaseToken, clientRequestId, type, payload` | `200 { event, lastEventSeq }`, `409` once the lease is lost |
 
-`routing` carries `role, roleMode, roleModel, productMode, specialty, dataClass,
-workingDirectory, projectId, attachments, followUp, previousTurnFailed`. `clientRequestId` is
-`<runId>/<fence>/<step>`, so a retried append is idempotent.
+`routing` carries `role, roleMode, roleModel, productMode, specialty, dataClass, workspace,
+projectId, attachments, followUp, previousTurnFailed`. `workspace` is a key, never a path:
+only this host's `config.workspaces` maps it to a directory, so a message cannot point an
+executor anywhere else, and Accounts keeps no working-directory paths. An unknown key leaves
+the run without a workspace and the selection rejects it (`workspace_unauthorized`).
+`clientRequestId` is `<runId>:<fence>:<step>`, so a retried append is idempotent.
 
 Events per run:
 
@@ -96,7 +99,8 @@ executor, model). Tool names are configuration: the target contract is `mem_cont
 
 ## Configuration
 
-See `cordis.patch.yml`. `policyPath` must be absolute. Tokens are named by environment
+See `cordis.patch.yml`. `policyPath` must be absolute. `workspaces` maps plain keys to the
+absolute directories this host authorizes for executors. Tokens are named by environment
 variable (`accounts.tokenEnv`, `memory.tokenEnv`), never written into configuration. A bad
 policy or configuration logs `aiw-orchestrator not_started` and leaves DSH running.
 

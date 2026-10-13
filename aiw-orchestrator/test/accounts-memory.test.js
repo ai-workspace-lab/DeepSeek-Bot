@@ -29,7 +29,7 @@ test('accounts client: claim, renew and append carry the scoped token, account a
   assert.equal(claimed.run.id, 'run-1')
   assert.equal(claimed.message.routing.role, 'engineer')
   assert.deepEqual(await client.renew(claimed.run, 60), { leaseExpiresAt: '2026-10-07T12:02:00Z', cancelRequested: true })
-  await client.appendEvent(claimed.run, { type: 'run.progressed', payload: { phase: 'selected' }, clientRequestId: 'run-1/3/1' })
+  await client.appendEvent(claimed.run, { type: 'run.progressed', payload: { phase: 'selected' }, clientRequestId: 'run-1:3:1' })
 
   assert.equal(calls[0].url, 'https://accounts.example/api/internal/task-scheduler/claim')
   assert.deepEqual(calls[0].body, { accountId: 'acct-1', workerId: 'dsh-mac-1', leaseTtlSeconds: 60 })
@@ -39,7 +39,7 @@ test('accounts client: claim, renew and append carry the scoped token, account a
   assert.equal(calls[1].body.leaseToken, 'lease-xyz')
   assert.deepEqual(calls[2].body, {
     accountId: 'acct-1', workerId: 'dsh-mac-1', fence: 3, leaseToken: 'lease-xyz',
-    clientRequestId: 'run-1/3/1', type: 'run.progressed', payload: { phase: 'selected' },
+    clientRequestId: 'run-1:3:1', type: 'run.progressed', payload: { phase: 'selected' },
   })
 })
 
